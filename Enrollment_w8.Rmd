@@ -1,0 +1,166 @@
+---
+title: "Enrollment_week8"
+author: "Sara Cifuentes"
+date: '2022-05-18'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Enrollment 18-19
+
+```{r}
+library(readxl)
+library(tidyverse)
+library(janitor)
+library(skimr)
+download.file(url = "https://github.com/rfortherestofus/going-deeper/raw/master/data-raw/enrollment-18-19.xlsx",
+              destfile = "raw_data/enrollment-18-19")
+
+download.file(url = "https://github.com/rfortherestofus/going-deeper/raw/master/data-raw/enrollment-17-18.xlsx",
+              destfile = "raw_data/enrollment-17-18")
+```
+
+```{r}
+enrollment_17_18 <- read_excel(path = "raw_data/enrollment-17-18",
+                               sheet = "Sheet 1")
+  
+enrollment_18_19 <- read_excel(path = "raw_data/enrollment-18-19",
+                               sheet = "Sheet 1")
+```
+
+```{r}
+etnicity_18_19 <- enrollment_18_19 %>% 
+  select(district_id, x2018_19_american_indian_alaska_native:x2018_19_multiracial) %>% 
+  select(!contains("percent")) %>% 
+  pivot_longer(cols = -district_id,
+               values_to = "number_of_students",
+               names_to = ("race_ethnicity")) #excepto district_id
+```
+
+```{r}
+etnicity_18_19 <- enrollment_18_19 %>% 
+  select(district_id, x2018_19_american_indian_alaska_native:x2018_19_multiracial) %>% 
+  select(!contains("percent")) %>% 
+  pivot_longer(cols = -district_id,
+               values_to = "number_of_students",
+               names_to = ("race_ethnicity")) %>%  #excepto district_id
+  mutate(number_of_students = na_if(number_of_students, ("-"))) %>% 
+  mutate(number_of_students = replace_na(number_of_students, "0")) 
+```
+
+```{r}
+etnicity_18_19 <- enrollment_18_19 %>% 
+  select(district_id, x2018_19_american_indian_alaska_native:x2018_19_multiracial) %>% 
+  select(!contains("percent")) %>% 
+  pivot_longer(cols = -district_id,
+               values_to = "number_of_students",
+               names_to = ("race_ethnicity")) %>%  #excepto district_id
+  mutate(number_of_students = na_if(number_of_students, ("-"))) %>% 
+  mutate(number_of_students = replace_na(number_of_students, "0")) %>% 
+  mutate(number_of_students = as.numeric(number_of_students)) %>% 
+  summarize(total = sum(number_of_students, na.rm = TRUE))
+
+skim(etnicity_18_19)
+
+```
+
+```{r}
+etnicity_18_19 <- enrollment_18_19 %>% 
+  select(district_id, x2018_19_american_indian_alaska_native:x2018_19_multiracial) %>% 
+  select(!contains("percent")) %>% 
+  pivot_longer(cols = -district_id,
+               values_to = "number_of_students",
+               names_to = ("race_ethnicity")) %>%  #excepto district_id
+  mutate(number_of_students = na_if(number_of_students, ("-"))) %>% 
+  mutate(number_of_students = replace_na(number_of_students, "0")) %>% 
+  mutate(number_of_students = as.numeric(number_of_students)) %>% 
+  mutate(race_ethnicity = str_remove(race_ethnicity, "x2018_19_")) %>% 
+  mutate(race_ethnicity = case_when(
+    race_ethnicity == "american_indian_alaska_native" ~ "American Indian/Alaskan Native",
+    race_ethnicity == "asian" ~ "Asian",
+    race_ethnicity == "native_hawaiian_pacific_islander" ~ "Native Hawaiian Pacific Islander",
+    race_ethnicity == "black_african_american" ~ "Black African American",
+    race_ethnicity == "hispanic_latino" ~ "Hispanic Latino",
+    race_ethnicity == "white" ~ "White",
+    race_ethnicity == "multiracial" ~ "Multiracial")) %>% 
+   mutate(year = "2018-2019")
+```
+
+```{r}
+etnicity_18_19 <- mutate(etnicity_18_19, year = "2018-2019")
+etnicity_17_18 <- mutate(etnicity_17_18, year = "2017-2018")
+
+```
+
+#Enrollment 17-18
+
+```{r}
+etnicity_17_18 <- enrollment_17_18 %>% 
+  select(district_id, x2017_18_american_indian_alaska_native:x2017_18_multiracial) %>% 
+  select(!contains("percent")) %>% 
+  pivot_longer(cols = -district_id,
+               values_to = "number_of_students",
+               names_to = ("race_ethnicity")) %>%  #excepto district_id
+  mutate(number_of_students = na_if(number_of_students, ("-"))) %>% 
+  mutate(number_of_students = as.numeric(number_of_students)) %>% 
+  mutate(race_ethnicity = str_remove(race_ethnicity, "x2017_18_")) %>% 
+  mutate(race_ethnicity = case_when(
+    race_ethnicity == "american_indian_alaska_native" ~ "American Indian/Alaskan Native",
+    race_ethnicity == "asian" ~ "Asian",
+    race_ethnicity == "native_hawaiian_pacific_islander" ~ "Native Hawaiian Pacific Islander",
+    race_ethnicity == "black_african_american" ~ "Black African American",
+    race_ethnicity == "hispanic_latino" ~ "Hispanic Latino",
+    race_ethnicity == "white" ~ "White",
+    race_ethnicity == "multiracial" ~ "Multiracial")) %>% 
+  mutate(year = "2017-2018")
+```
+
+#This is my first function
+
+```{r}
+  enrollment_cleaning_year <- function(raw_data_year, specify_year, string_year,year_american_indian_alaska_native, year_multiracial ) { raw_data_year %>% 
+    select(district_id, year_american_indian_alaska_native:year_multiracial) %>% 
+    select(!contains("percent")) %>% 
+    pivot_longer(cols = -district_id,
+                 values_to = "number_of_students",
+                 names_to = ("race_ethnicity")) %>%  #excepto district_id
+    mutate(number_of_students = na_if(number_of_students, ("-"))) %>% 
+    mutate(number_of_students = as.numeric(number_of_students)) %>% 
+    mutate(race_ethnicity = str_remove(race_ethnicity, string_year)) %>% 
+    mutate(race_ethnicity = case_when(
+      race_ethnicity == "american_indian_alaska_native" ~ "American Indian/Alaskan Native",
+      race_ethnicity == "asian" ~ "Asian",
+      race_ethnicity == "native_hawaiian_pacific_islander" ~ "Native Hawaiian Pacific Islander",
+      race_ethnicity == "black_african_american" ~ "Black African American",
+      race_ethnicity == "hispanic_latino" ~ "Hispanic Latino",
+      race_ethnicity == "white" ~ "White",
+      race_ethnicity == "multiracial" ~ "Multiracial")) %>% 
+    mutate(year = specify_year)
+  
+}
+
+```
+
+```{r}
+etnicity_17_18 <- enrollment_cleaning_year(raw_data_year = enrollment_17_18,
+                                           specify_year = "2017-2018",
+                                           string_year = "x2017_18_", year_american_indian_alaska_native = "x2017_18_american_indian_alaska_native",
+                                           year_multiracial = "x2017_18_multiracial")
+
+etnicity_18_19 <- enrollment_cleaning_year(raw_data_year = enrollment_18_19,
+                                           specify_year = "2018-2019",
+                                           string_year = "x2018_19_",
+                                           year_american_indian_alaska_native = "x2018_19_american_indian_alaska_native",
+                                           year_multiracial = "x2018_19_multiracial")
+```
+
+# Joining years
+
+```{r}
+enrollment_etnicity_allyears <- bind_rows(etnicity_17_18, etnicity_18_19)
+```
+
+
